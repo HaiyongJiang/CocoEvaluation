@@ -239,6 +239,7 @@ class COCOeval:
         :return: dict (single image results)
         '''
         p = self.params
+        # here the category is considered. 
         if p.useCats:
             gt = self._gts[imgId,catId]
             dt = self._dts[imgId,catId]
@@ -275,6 +276,8 @@ class COCOeval:
                 for dind, d in enumerate(dt):
                     # information about best match so far (m=-1 -> unmatched)
                     iou = min([t,1-1e-10])
+                    # computer the most likely ground truth (with the most intersections).
+                    # setup the dtIg(ignore mask for small/big/all objects), dtm, gtm(dictate the matching ids)
                     m   = -1
                     for gind, g in enumerate(gt):
                         # if this gt already matched, and not a crowd, continue
@@ -327,8 +330,8 @@ class COCOeval:
         if p is None:
             p = self.params
         p.catIds = p.catIds if p.useCats == 1 else [-1]
-        T           = len(p.iouThrs)
-        R           = len(p.recThrs)
+        T           = len(p.iouThrs)  # different iou thresholds. 
+        R           = len(p.recThrs)  # different recall thresholds.
         K           = len(p.catIds) if p.useCats else 1
         A           = len(p.areaRng)
         M           = len(p.maxDets)
@@ -363,6 +366,7 @@ class COCOeval:
 
                     # different sorting method generates slightly different results.
                     # mergesort is used to be consistent as Matlab implementation.
+                    # sort by the detection scores. 
                     inds = np.argsort(-dtScores, kind='mergesort')
 
                     dtm  = np.concatenate([e['dtMatches'][:,0:maxDet] for e in E], axis=1)[:,inds]
@@ -371,6 +375,7 @@ class COCOeval:
                     npig = np.count_nonzero(gtIg==0 )
                     if npig == 0:
                         continue
+                    # check what is correctly detected (only region is checked, not class), and what is missing. 
                     tps = np.logical_and(               dtm,  np.logical_not(dtIg) )
                     fps = np.logical_and(np.logical_not(dtm), np.logical_not(dtIg) )
 
